@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import torch.utils.data
+import matplotlib.pyplot as plt
 
 import numpy as np
 import torch
@@ -71,13 +72,15 @@ class AutoEncoder(nn.Module):
         # Use sigmoid activations for f and g.                              #
         #####################################################################
         out = inputs
+        out = torch.sigmoid(self.g(out))
+        out = torch.sigmoid(self.h(out))
         #####################################################################
         #                       END OF YOUR CODE                            #
         #####################################################################
         return out
 
 
-def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
+def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch, test_data):
     """ Train the neural network, where the objective also includes
     a regularizer.
 
@@ -90,15 +93,16 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
     :param num_epoch: int
     :return: None
     """
-    # TODO: Add a regularizer to the cost function. 
-    
+    # TODO: Add a regularizer to the cost function.
+    losses = []
+    acc = []
+
     # Tell PyTorch you are training the model.
     model.train()
 
     # Define optimizers and loss function.
     optimizer = optim.SGD(model.parameters(), lr=lr)
     num_student = train_data.shape[0]
-
     for epoch in range(0, num_epoch):
         train_loss = 0.
 
@@ -113,18 +117,33 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
             nan_mask = np.isnan(train_data[user_id].unsqueeze(0).numpy())
             target[0][nan_mask] = output[0][nan_mask]
 
-            loss = torch.sum((output - target) ** 2.)
+            loss = torch.sum((output - target) ** 2.) + 0.5 * lamb * model.get_weight_norm()
             loss.backward()
 
             train_loss += loss.item()
             optimizer.step()
 
         valid_acc = evaluate(model, zero_train_data, valid_data)
+
         print("Epoch: {} \tTraining Cost: {:.6f}\t "
               "Valid Acc: {}".format(epoch, train_loss, valid_acc))
-    #####################################################################
-    #                       END OF YOUR CODE                            #
-    #####################################################################
+        losses.append(train_loss)
+        acc.append(valid_acc)
+    plt.plot(range(num_epoch), losses)
+    plt.title("Training Cost vs. Epochs")
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.show()
+    plt.plot(range(num_epoch), acc)
+    plt.title(" Validation Accuracy vs. Epochs")
+    plt.xlabel("Epochs")
+    plt.ylabel("Accuracy")
+    plt.show()
+
+
+#####################################################################
+#                       END OF YOUR CODE                            #
+#####################################################################
 
 
 def evaluate(model, train_data, valid_data):
@@ -162,19 +181,47 @@ def main():
     # validation set.                                                   #
     #####################################################################
     # Set model hyperparameters.
-    k = None
-    model = None
+    k = 50
+    model = AutoEncoder(num_question=1774, k=k)
 
     # Set optimization hyperparameters.
-    lr = None
-    num_epoch = None
-    lamb = None
+    lr = 0.01
+    num_epoch = 35
+    lamb = 0.001
 
     train(model, lr, lamb, train_matrix, zero_train_matrix,
-          valid_data, num_epoch)
+          valid_data, num_epoch, test_data)
+    test_acc = evaluate(model, zero_train_matrix, test_data)
+    print("Test Accuracy: {}".format(test_acc))
+
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
+    # Hyperparameters tested:
+    # k = [10, 50, 100, 200, 500]
+    # k = 10: val accuracy: 0.6861
+    # k = 50: val accuracy:  0.68798 * optimal *
+    # k = 100: val accuracy: 0.6864
+    # k = 200: val accuracy: 0.6809
+    # k = 500: val accuracy: 0.6740
+
+    #  Adjusting regularizer hyperparameter
+    # lamb = [0.001, 0.01,  0.1, 1.0]
+    # lamb = 0.001: val acc: 0.6846 *** OPTIMAL**
+    # lamb = 0.01: val acc: 0.6826
+    # lamb = 0.1: val acc: 0.6837
+    # lamb = 1: val acc: 0.6239
+
+    # Optimal hyperparameters
+    # k = 50
+    # lr = 0.01
+    # num_epoch = 35
+    # lamb = 0.001
+
+    # final test accuracy before adding regularizer: 67.71%
+    # final test accuracy after adding regularizer: 68.95%
+    # final validation accuracy after adding regularizer: 68.14%
+    # improvement in test accuracy with regularization penalty
 
 
 if __name__ == "__main__":

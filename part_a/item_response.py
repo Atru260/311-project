@@ -1,7 +1,7 @@
-from starter_code.utils import *
+from utils import *
 
 import numpy as np
-import scipy
+import scipy.special
 import matplotlib.pyplot as plt
 from matplotlib.colors import hsv_to_rgb
 def sigmoid(x):
@@ -142,6 +142,24 @@ def irt(data, val_data, test_data, lr, iterations, num_users, num_questions):
     # TODO: You may change the return values to achieve what you want.
     return theta, beta, val_acc_lst, test_acc_lst, (nllk_train, nllk_val)
 
+def irt_sparse(train_sparse, val_data, test_data, lr, iterations, num_users, num_questions):
+    ''' 
+    Run IRT using the sparse matrix representation of the training data
+    '''
+    train_dict = {'user_id':[], 'question_id':[], 'is_correct':[]}
+    
+    # Convert sparse matrix to dictionary before feeding it to the algo.
+    for user_id in range(train_sparse.shape[0]):
+        for question_id in range(train_sparse.shape[1]):
+            is_correct = train_sparse[user_id, question_id]
+            if not np.isnan(is_correct):
+                train_dict['user_id'].append(user_id)
+                train_dict['question_id'].append(question_id)
+                train_dict['is_correct'].append(is_correct)
+    
+    return irt(train_dict, val_data, test_data, lr, iterations, num_users, num_questions)
+    
+    
 
 def evaluate(data, theta, beta):
     """ Evaluate the model given data and return the accuracy.
@@ -277,7 +295,6 @@ def main():
     
     plt.xlabel('Theta')
     plt.ylabel('Probability Correct')
-    #plt.xticks(range(-5,5))
     
     color_val = 0
     for i in range(len(question_probabilities)):

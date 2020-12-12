@@ -1,6 +1,6 @@
-import os
-#print(os.getcwd())
-os.chdir("..")
+# import os
+# #print(os.getcwd())
+# os.chdir("..")
 
 from sklearn.impute import KNNImputer
 from utils import *
@@ -25,6 +25,26 @@ def knn_impute_by_user(matrix, valid_data, k):
     acc = sparse_matrix_evaluate(valid_data, mat)
     print("Validation Accuracy: {}".format(acc))
     return acc
+
+def knn_impute_by_user_p(matrix, valid_data, k):
+    """ Fill in the missing values using k-Nearest Neighbors based on
+    student similarity. Return the accuracy on valid_data.
+
+    See https://scikit-learn.org/stable/modules/generated/sklearn.
+    impute.KNNImputer.html for details.
+
+    :param matrix: 2D sparse matrix
+    :param valid_data: A dictionary {user_id: list, question_id: list,
+    is_correct: list}
+    :param k: int
+    :return: float
+    """
+    nbrs = KNNImputer(n_neighbors=k)
+    # We use NaN-Euclidean distance measure.
+    mat = nbrs.fit_transform(matrix)
+    prediction = sparse_matrix_predictions(valid_data, mat)
+    return prediction
+
 
 
 def knn_impute_by_item(matrix, valid_data, k):

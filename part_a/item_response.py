@@ -142,25 +142,6 @@ def irt(data, val_data, test_data, lr, iterations, num_users, num_questions):
     # TODO: You may change the return values to achieve what you want.
     return theta, beta, val_acc_lst, test_acc_lst, (nllk_train, nllk_val)
 
-def irt_sparse(train_sparse, val_data, test_data, lr, iterations, num_users, num_questions):
-    ''' 
-    Run IRT using the sparse matrix representation of the training data
-    '''
-    train_dict = {'user_id':[], 'question_id':[], 'is_correct':[]}
-    
-    # Convert sparse matrix to dictionary before feeding it to the algo.
-    for user_id in range(train_sparse.shape[0]):
-        for question_id in range(train_sparse.shape[1]):
-            is_correct = train_sparse[user_id, question_id]
-            if not np.isnan(is_correct):
-                train_dict['user_id'].append(user_id)
-                train_dict['question_id'].append(question_id)
-                train_dict['is_correct'].append(is_correct)
-    
-    return irt(train_dict, val_data, test_data, lr, iterations, num_users, num_questions)
-    
-    
-
 def evaluate(data, theta, beta):
     """ Evaluate the model given data and return the accuracy.
     :param data: A dictionary {user_id: list, question_id: list,
@@ -178,7 +159,91 @@ def evaluate(data, theta, beta):
         pred.append(p_a >= 0.5)
     return np.sum((data["is_correct"] == np.array(pred))) \
            / len(data["is_correct"])
+           
+           
+def irt_sparse(train_sparse, v_or_t, lr, iterations, num_users, num_questions):
+    ''' 
+    Run IRT prediction using the sparse matrix representation of the training data
+    '''
+    train_dict = {'user_id':[], 'question_id':[], 'is_correct':[]}
+    
+    # Convert sparse matrix to dictionary before feeding it to the algo.
+    for user_id in range(train_sparse.shape[0]):
+        for question_id in range(train_sparse.shape[1]):
+            is_correct = train_sparse[user_id, question_id]
+            if not np.isnan(is_correct):
+                train_dict['user_id'].append(user_id)
+                train_dict['question_id'].append(question_id)
+                train_dict['is_correct'].append(is_correct)
+    predictions = irt_p(train_dict, v_or_t, lr, iterations, num_users, num_questions)
+    predictions = np.where(predictions == True, 1, predictions)
+    predictions = np.where(predictions == False, 0, predictions)
+    return predictions
+    
 
+
+
+           
+def irt_p(data, v_or_t, lr, iterations, num_users, num_questions):
+    """ Train IRT model.
+
+    You may optionally replace the function arguments to receive a matrix.
+
+    :param data: The sparse matrix (num_users * num_questions)
+    :param val_data: A dictionary {user_id: list, question_id: list,
+    is_correct: list}
+    :param lr: float
+    :param iterations: int
+    :return: (theta, beta, val_acc_lst)
+    """
+    # TODO: Initialize theta and beta.
+    theta = np.random.rand(num_users)
+    beta = np.random.rand(num_questions)
+
+    # val_acc_lst = []
+    # test_acc_lst = []
+
+    # nllk_train = []
+    # nllk_val = []
+
+    for i in range(iterations):
+        # neg_lld_train = neg_log_likelihood(data, theta=theta, beta=beta)
+        # neg_lld_val = neg_log_likelihood(val_data, theta=theta, beta=beta)
+        
+        # nllk_train.append(neg_lld_train)
+        # nllk_val.append(neg_lld_val)
+
+        
+        
+        # score_val = evaluate(data=val_data, theta=theta, beta=beta)
+        # val_acc_lst.append(score_val)
+        
+        # score_test = evaluate(data=test_data, theta=theta, beta=beta)
+        # test_acc_lst.append(score_test)
+        
+        # print("NLLK: {} \t Score: {}".format(neg_lld_train, score_val))
+        p = predict(v_or_t, theta, beta)
+        theta, beta = update_theta_beta(data, lr, theta, beta)
+
+    # TODO: You may change the return values to achieve what you want.
+    return p
+
+def predict(data, theta, beta):
+    """ Evaluate the model given data and return the accuracy.
+    :param data: A dictionary {user_id: list, question_id: list,
+    is_correct: list}
+
+    :param theta: Vector
+    :param beta: Vector
+    :return: float
+    """
+    pred = []
+    for i, q in enumerate(data["question_id"]):
+        u = data["user_id"][i]
+        x = (theta[u] - beta[q]).sum()
+        p_a = sigmoid(x)
+        pred.append(p_a >= 0.5)
+    return np.array(pred)
 
 def main():
     train_data = load_train_csv("../data")

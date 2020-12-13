@@ -6,6 +6,7 @@ print(os.getcwd())
 
 from utils import *
 from part_a.knn import knn_impute_by_user_p
+from part_a.knn import knn_impute_by_user
 from part_a.neural_network import AutoEncoder
 from part_a.neural_network import train_p
 from part_a.neural_network import predict
@@ -15,6 +16,7 @@ import torch
 # from https://towardsdatascience.com/you-should-care-about-bootstrapping-ced0ffff2434
 
 def bootstrap(data,n_trials):
+    np.random.seed(100) 
     index = np.arange(data.shape[0])
     bootstrap_index = np.random.choice(index,
                                        size=data.shape[0]*n_trials,
@@ -24,8 +26,7 @@ def bootstrap(data,n_trials):
     return bootstrap_data
 
 def model(model_name, bag, v_or_t):
-    np.random.seed(100) 
-    knn_k = 16
+    knn_k = 27
     lr_i = 0.02
     iterations = 10
     num_users = bag.shape[0]
@@ -38,7 +39,16 @@ def model(model_name, bag, v_or_t):
     num_epoch = 35
     lamb = 0.001
     if model_name == 'k':
-        p_knn = knn_impute_by_user_p(bag, v_or_t, knn_k)
+        knnl = []
+        for i in range(1, knn_k):
+            knn = knn_impute_by_user(bag, v_or_t, i)
+            knnl.append(knn)
+        knnl = np.array(knnl)
+        best_k = np.argmax(knnl) + 1
+        print('best k =')
+        print(best_k)
+        return knn_impute_by_user_p(bag, v_or_t, best_k)
+        
         return np.array(p_knn)
     if model_name == 'i':
         p_irt = irt_sparse(bag, v_or_t, lr_i, iterations, num_users, num_questions)
@@ -50,7 +60,7 @@ def model(model_name, bag, v_or_t):
     # Change to Float Tensor for PyTorch.
         zero_train_matrix = torch.FloatTensor(zero_train_matrix)
         train_matrix = torch.FloatTensor(bag)
-        train_p(m, lr_n, lamb, train_matrix, zero_train_matrix, num_epoch)
+        train_p(m, lr_n, lamb, train_matrix, zero_train_matrix, num_epoch, v_or_t)
         return predict(m, zero_train_matrix, v_or_t)
     
 def main():
@@ -66,10 +76,15 @@ def main():
     bags = bootstrap(sparse_matrix, trials)
     p_knn = model('k', bags[0], val_data)
     p_irt = model('i', bags[1], val_data)
+    print('neural network hyperparameter testing...')
     p_nn = model('n', bags[2], val_data)
     # #print(p_irt)
-    total = p_knn + p_irt + p_nn
-    total = total/3
+    prob = p_irt + p_nn
+    prob = prob/2
+    prob = np.where(prob >= .5, 1, prob)
+    prob = np.where(prob <= .5, 0, prob)
+    total = p_knn + prob
+    total = total/2
     predict = evaluate(val_data, total)
     #print(p_nn)
     print(predict)

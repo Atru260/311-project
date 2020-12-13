@@ -144,7 +144,7 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch, t
 #####################################################################
 #                       END OF YOUR CODE                            #
 #####################################################################
-def train_p(model, lr, lamb, train_data, zero_train_data, num_epoch):
+def train_p(model, lr, lamb, train_data, zero_train_data, num_epoch, valid_data):
     """ Train the neural network, where the objective also includes
     a regularizer.
 
@@ -158,8 +158,8 @@ def train_p(model, lr, lamb, train_data, zero_train_data, num_epoch):
     :return: None
     """
     # TODO: Add a regularizer to the cost function.
-    # losses = []
-    # acc = []
+    losses = []
+    acc = []
 
     # Tell PyTorch you are training the model.
     model.train()
@@ -187,22 +187,22 @@ def train_p(model, lr, lamb, train_data, zero_train_data, num_epoch):
             train_loss += loss.item()
             optimizer.step()
         
-    #     valid_acc = evaluate(model, zero_train_data, valid_data)
+        valid_acc = evaluate(model, zero_train_data, valid_data)
 
-    #     print("Epoch: {} \tTraining Cost: {:.6f}\t "
-    #           "Valid Acc: {}".format(epoch, train_loss, valid_acc))
-    #     losses.append(train_loss)
-    #     acc.append(valid_acc)
-    # plt.plot(range(num_epoch), losses)
-    # plt.title("Training Cost vs. Epochs")
-    # plt.xlabel("Epochs")
-    # plt.ylabel("Loss")
-    # plt.show()
-    # plt.plot(range(num_epoch), acc)
-    # plt.title(" Validation Accuracy vs. Epochs")
-    # plt.xlabel("Epochs")
-    # plt.ylabel("Accuracy")
-    # plt.show()
+        print("Epoch: {} \tTraining Cost: {:.6f}\t "
+              "Valid Acc: {}".format(epoch, train_loss, valid_acc))
+        losses.append(train_loss)
+        acc.append(valid_acc)
+    plt.plot(range(num_epoch), losses)
+    plt.title("Training Cost vs. Epochs")
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.show()
+    plt.plot(range(num_epoch), acc)
+    plt.title(" Validation Accuracy vs. Epochs")
+    plt.xlabel("Epochs")
+    plt.ylabel("Accuracy")
+    plt.show()
 
 
 def evaluate(model, train_data, valid_data):

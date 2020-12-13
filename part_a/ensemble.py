@@ -50,7 +50,7 @@ def model(model_name, bag, v_or_t):
     # Change to Float Tensor for PyTorch.
         zero_train_matrix = torch.FloatTensor(zero_train_matrix)
         train_matrix = torch.FloatTensor(bag)
-        train_p(m, lr_n, lamb, train_matrix, zero_train_matrix, num_epoch)
+        train_p(m, lr_n, lamb, train_matrix, zero_train_matrix, num_epoch, v_or_t)
         return predict(m, zero_train_matrix, v_or_t)
     
 def main():

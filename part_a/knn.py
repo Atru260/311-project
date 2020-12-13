@@ -42,6 +42,8 @@ def knn_impute_by_user_p(matrix, valid_data, k):
     nbrs = KNNImputer(n_neighbors=k)
     # We use NaN-Euclidean distance measure.
     mat = nbrs.fit_transform(matrix)
+    acc = sparse_matrix_evaluate(valid_data, mat)
+    print("Validation Accuracy: {} k: {}".format(acc, k))
     prediction = sparse_matrix_predictions(valid_data, mat)
     return prediction
 

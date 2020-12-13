@@ -6,6 +6,7 @@ print(os.getcwd())
 
 from utils import *
 from part_a.knn import knn_impute_by_user_p
+from part_a.knn import knn_impute_by_user
 from part_a.neural_network import AutoEncoder
 from part_a.neural_network import train_p
 from part_a.neural_network import predict
@@ -25,7 +26,7 @@ def bootstrap(data,n_trials):
     return bootstrap_data
 
 def model(model_name, bag, v_or_t):
-    knn_k = 16
+    knn_k = 27
     lr_i = 0.02
     iterations = 10
     num_users = bag.shape[0]
@@ -38,7 +39,16 @@ def model(model_name, bag, v_or_t):
     num_epoch = 35
     lamb = 0.001
     if model_name == 'k':
-        p_knn = knn_impute_by_user_p(bag, v_or_t, knn_k)
+        knnl = []
+        for i in range(1, knn_k):
+            knn = knn_impute_by_user(bag, v_or_t, i)
+            knnl.append(knn)
+        knnl = np.array(knnl)
+        best_k = np.argmax(knnl) + 1
+        print('best k =')
+        print(best_k)
+        return knn_impute_by_user_p(bag, v_or_t, best_k)
+        
         return np.array(p_knn)
     if model_name == 'i':
         p_irt = irt_sparse(bag, v_or_t, lr_i, iterations, num_users, num_questions)
@@ -66,6 +76,7 @@ def main():
     bags = bootstrap(sparse_matrix, trials)
     p_knn = model('k', bags[0], val_data)
     p_irt = model('i', bags[1], val_data)
+    print('neural network hyperparameter testing...')
     p_nn = model('n', bags[2], val_data)
     # #print(p_irt)
     prob = p_irt + p_nn

@@ -189,3 +189,40 @@ def sparse_matrix_predictions(data, matrix, threshold=0.5):
         else:
             predictions.append(0.)
     return predictions
+
+def load_question_metadata(root_dir='/data'):
+    """ Load the question metadata as a dictionary.
+    Does not include the subject with id 0, which is present in every question.
+    :param root_dir: str
+    :return: A dictionary {question_id: subjects}
+   
+    """
+    path = os.path.join(root_dir, "question_meta.csv")
+    
+    if not os.path.exists(path):
+        raise Exception("The specified path {} does not exist.".format(path))
+    # Initialize the data.
+    data = {}
+    # Iterate over the row to fill in the data.
+    with open(path, "r") as csv_file:
+        reader = csv.reader(csv_file)
+        for row in reader:
+            try:
+                q_id = int(row[0])
+                subjects = row[1].replace('[', '').replace(']', '').split(sep=',')
+                
+                for i in range(len(subjects)):
+                    subjects[i] = int(subjects[i])
+                
+                subjects.remove(0)
+                data[q_id] = subjects
+            except ValueError:
+                print('ValueError')
+                # Pass first row.
+                pass
+            except IndexError:
+                # is_correct might not be available.
+                print('IndexError')
+
+                pass
+    return data

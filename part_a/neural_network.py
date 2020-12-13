@@ -252,8 +252,8 @@ def predict(model, train_data, valid_data):
         guess = output[0][valid_data["question_id"][i]].item()
         predictions.append(np.array(guess))
     predictions = np.array(predictions)
-    predictions = np.where(predictions == True, 1, predictions)
-    predictions = np.where(predictions == False, 0, predictions)
+    # predictions = np.where(predictions == True, 1, predictions)
+    # predictions = np.where(predictions == False, 0, predictions)
     return predictions
 
 def main():

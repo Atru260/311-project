@@ -15,6 +15,7 @@ import torch
 # from https://towardsdatascience.com/you-should-care-about-bootstrapping-ced0ffff2434
 
 def bootstrap(data,n_trials):
+    np.random.seed(100) 
     index = np.arange(data.shape[0])
     bootstrap_index = np.random.choice(index,
                                        size=data.shape[0]*n_trials,
@@ -24,7 +25,6 @@ def bootstrap(data,n_trials):
     return bootstrap_data
 
 def model(model_name, bag, v_or_t):
-    np.random.seed(100) 
     knn_k = 16
     lr_i = 0.02
     iterations = 10
@@ -68,8 +68,12 @@ def main():
     p_irt = model('i', bags[1], val_data)
     p_nn = model('n', bags[2], val_data)
     # #print(p_irt)
-    total = p_knn + p_irt + p_nn
-    total = total/3
+    prob = p_irt + p_nn
+    prob = prob/2
+    prob = np.where(prob >= .5, 1, prob)
+    prob = np.where(prob <= .5, 0, prob)
+    total = p_knn + prob
+    total = total/2
     predict = evaluate(val_data, total)
     #print(p_nn)
     print(predict)

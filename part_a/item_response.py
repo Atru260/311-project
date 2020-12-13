@@ -242,7 +242,8 @@ def predict(data, theta, beta):
         u = data["user_id"][i]
         x = (theta[u] - beta[q]).sum()
         p_a = sigmoid(x)
-        pred.append(p_a >= 0.5)
+        #pred.append(p_a >= 0.5)
+        pred.append(p_a)
     return np.array(pred)
 
 def main():

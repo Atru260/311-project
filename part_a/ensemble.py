@@ -26,7 +26,7 @@ def bootstrap(data,n_trials):
     return bootstrap_data
 
 def model(model_name, bag, v_or_t):
-    knn_k = 27
+    knn_k = 24
     lr_i = 0.02
     iterations = 10
     num_users = bag.shape[0]
@@ -35,21 +35,19 @@ def model(model_name, bag, v_or_t):
     m = AutoEncoder(num_question=1774, k=k)
 
     # Set optimization hyperparameters.
-    lr_n = 0.01
-    num_epoch = 35
-    lamb = 0.001
+    lr_n = 0.001
+    num_epoch = 32
+    lamb = 0.01
     if model_name == 'k':
-        knnl = []
-        for i in range(1, knn_k):
-            knn = knn_impute_by_user(bag, v_or_t, i)
-            knnl.append(knn)
-        knnl = np.array(knnl)
-        best_k = np.argmax(knnl) + 1
-        print('best k =')
-        print(best_k)
-        return knn_impute_by_user_p(bag, v_or_t, best_k)
-        
-        return np.array(p_knn)
+        # knnl = []
+        # for i in range(1, knn_k):
+        #     knn = knn_impute_by_user(bag, v_or_t, i)
+        #     knnl.append(knn)
+        # knnl = np.array(knnl)
+        # best_k = np.argmax(knnl) + 1
+        # print('best k =')
+        # print(best_k)
+        return knn_impute_by_user_p(bag, v_or_t, knn_k)
     if model_name == 'i':
         p_irt = irt_sparse(bag, v_or_t, lr_i, iterations, num_users, num_questions)
         return p_irt
@@ -63,8 +61,15 @@ def model(model_name, bag, v_or_t):
         train_p(m, lr_n, lamb, train_matrix, zero_train_matrix, num_epoch, v_or_t)
         return predict(m, zero_train_matrix, v_or_t)
     
+    """ Train more than 2 of the same model"""
+def train_e(model_name, bags, start_index, end_index, v_or_t):
+    total = model(model_name, bags[start_index], v_or_t)
+    for i in range(start_index+1, end_index+1):
+        print(i)
+        total= total + model(model_name, bags[i], v_or_t)
+    return total
 def main():
-    trials = 3
+    trials = 50
     sparse_matrix = load_train_sparse("data").toarray()
     val_data = load_valid_csv("data")
     test_data = load_public_test_csv("data")
@@ -74,17 +79,26 @@ def main():
     print(sparse_matrix.shape)
 
     bags = bootstrap(sparse_matrix, trials)
-    p_knn = model('k', bags[0], val_data)
-    p_irt = model('i', bags[1], val_data)
+    print(bags[38].shape)
+    print(bags[37].shape)
+    #p_knn = train_e('k', bags, 0, 47, val_data)
+    p_knn = model('k', bags[38], val_data)
+    # p_knn2 = model('k', bags[3], val_data)
+    # p_knn3 = model('k', bags[4], val_data)
+    # p_knn4 = model('k', bags[5], val_data)
+    # p_knn5 = model('k', bags[6], val_data)
+    # p_knn6 = model('k', bags[7], val_data)
+    # p_knn7 = model('k', bags[8], val_data)
+    p_irt = model('i', bags[48], val_data)
     print('neural network hyperparameter testing...')
-    p_nn = model('n', bags[2], val_data)
+    p_nn = model('n', bags[49], val_data)
     # #print(p_irt)
     prob = p_irt + p_nn
     prob = prob/2
     prob = np.where(prob >= .5, 1, prob)
     prob = np.where(prob <= .5, 0, prob)
-    total = p_knn + prob
-    total = total/2
+    total = p_knn +prob
+    total = total/(trials-1)
     predict = evaluate(val_data, total)
     #print(p_nn)
     print(predict)

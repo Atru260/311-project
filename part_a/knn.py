@@ -45,7 +45,7 @@ def knn_impute_by_user_p(matrix, valid_data, k):
     acc = sparse_matrix_evaluate(valid_data, mat)
     print("Validation Accuracy: {} k: {}".format(acc, k))
     prediction = sparse_matrix_predictions(valid_data, mat)
-    return prediction
+    return np.array(prediction)
 
 
 

@@ -117,7 +117,8 @@ def irt(data, val_data, test_data, lr, iterations, num_users, num_questions):
 
     val_acc_lst = []
     test_acc_lst = []
-
+    train_acc_lst = []
+    
     nllk_train = []
     nllk_val = []
 
@@ -136,11 +137,14 @@ def irt(data, val_data, test_data, lr, iterations, num_users, num_questions):
         score_test = evaluate(data=test_data, theta=theta, beta=beta)
         test_acc_lst.append(score_test)
         
+        score_train = evaluate(data=data, theta=theta, beta=beta)
+        train_acc_lst.append(score_train)
+        
         print("NLLK: {} \t Score: {}".format(neg_lld_train, score_val))
         theta, beta = update_theta_beta(data, lr, theta, beta)
 
     # TODO: You may change the return values to achieve what you want.
-    return theta, beta, val_acc_lst, test_acc_lst, (nllk_train, nllk_val)
+    return theta, beta, val_acc_lst, test_acc_lst, train_acc_lst, (nllk_train, nllk_val)
 
 def evaluate(data, theta, beta):
     """ Evaluate the model given data and return the accuracy.
@@ -274,7 +278,7 @@ def main():
     
     print("Running IRT with learning rate {} for {} iterations.".format(lr, iterations))
 
-    theta, beta, val_acc_lst, test_acc_lst, nllk \
+    theta, beta, val_acc_lst, test_acc_lst, train_acc_lst, nllk \
         = irt(train_data, val_data, test_data, lr, iterations, num_users, num_questions)
     
     
@@ -319,6 +323,7 @@ def main():
     #####################################################################
     print("Final validation accuracy:", val_acc_lst[-1])
     print("Final test accuracy:", test_acc_lst[-1])
+    print("Final training accuracy", train_acc_lst[-1])
     
     # d) Plot probabilities of a correct answer for 5 questions
     
@@ -366,14 +371,14 @@ def main():
     for i in range(len(question_probabilities)):
         
         p = question_probabilities[i]
-        label = "{},{:.2f}".format(questions[i], betas[i])
+        label = "{} ({:.2f})".format(questions[i], betas[i])
         
         plt.plot(theta_range, p, '-', label=label, color=hsv_to_rgb((color_val, 1, .7)))
         
         color_val += .2
         
     
-    plt.legend(title="Question Number,Beta")
+    plt.legend(title="Question Number (Beta)")
     
     plt.show()
     

@@ -11,19 +11,38 @@ from part_a.neural_network import AutoEncoder
 from part_a.neural_network import train_p
 from part_a.neural_network import predict
 from part_a.item_response import irt_sparse
+from scipy import sparse
 import torch
 
 # from https://towardsdatascience.com/you-should-care-about-bootstrapping-ced0ffff2434
 
-def bootstrap(data,n_trials):
+def bootstrap(data,n_trials, sparse_shape):
     np.random.seed(100) 
-    index = np.arange(data.shape[0])
+    
+    # Arrange training data into a numpy array with columns user_id, question_id, and is_correct
+    train = np.array([np.array(x) for x in [data['user_id'], data['question_id'], data['is_correct']]]).T
+    
+    index = np.arange(train.shape[0])
+
+    
     bootstrap_index = np.random.choice(index,
-                                       size=data.shape[0]*n_trials,
+                                       size=train.shape[0]*n_trials,
                                        replace=True)
-    bootstrap_data = np.reshape(data[bootstrap_index,:],
-                                (n_trials,*data.shape))
-    return bootstrap_data
+    bootstrap_data = np.reshape(train[bootstrap_index,:],
+                                (n_trials,*train.shape))
+    
+    # Convert to sparse matrix
+    spdata = np.full((n_trials, *sparse_shape), np.nan)
+    
+    for t in range(n_trials):
+        
+        trial_boots = bootstrap_data[t].T
+        
+        # Set user_id, question_id index to is_correct
+        spdata[t][trial_boots[0], trial_boots[1]] = trial_boots[2]
+        #spdata[t] = sparse.csr_matrix(spdata[t])
+    return spdata
+    
 
 def model(model_name, bag, v_or_t):
     knn_k = 24
@@ -78,7 +97,10 @@ def main():
     print("Shape of sparse matrix:")
     print(sparse_matrix.shape)
 
-    bags = bootstrap(sparse_matrix, trials)
+    
+    train_data = load_train_csv("data")
+
+    bags = bootstrap(train_data, trials, sparse_matrix.shape)
     print(bags[38].shape)
     print(bags[37].shape)
     #p_knn = train_e('k', bags, 0, 47, val_data)

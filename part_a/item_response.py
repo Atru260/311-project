@@ -1,8 +1,10 @@
 from utils import *
+import part_b.item_response_2 as irt2
 
 import numpy as np
 import scipy.special
 import matplotlib.pyplot as plt
+
 from matplotlib.colors import hsv_to_rgb
 def sigmoid(x):
     """ Apply sigmoid function.
@@ -379,6 +381,34 @@ def main():
         
     
     plt.legend(title="Question Number (Beta)")
+    
+    plt.show()
+    
+    
+    
+    # Plot the accuracies with item_response_2
+    train_nllk_2, val_nllk_2, \
+        train_acc_lst_2, val_acc_lst_2, test_acc_lst_2 = irt2.main()
+    
+    plt.figure()
+    
+    plt.title("Comparison of augmented IRT model with baseline accuracies", y=1.05)
+    
+    plt.xlabel('Iteration')
+    plt.ylabel('Accuracy')
+    
+    train_col = hsv_to_rgb((.1, 1, .75))
+    val_col = hsv_to_rgb((.7, 1, .7))
+    test_col= hsv_to_rgb((.45, 1, .8))
+        
+    plt.plot(train_acc_lst, '-', label="train", color=train_col)
+    plt.plot(train_acc_lst_2, '--', label="train 2", color=train_col)
+    plt.plot(val_acc_lst, '-', label="validation", color=val_col)
+    plt.plot(val_acc_lst_2, '--', label="validation 2", color=val_col)
+    plt.plot(test_acc_lst, '-', label="test", color=test_col)
+    plt.plot(test_acc_lst_2, '--', label="test 2", color=test_col)        
+    
+    plt.legend()
     
     plt.show()
     

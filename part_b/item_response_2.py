@@ -311,9 +311,9 @@ def main():
     #questions = train_data['question_id']
     #is_correct = train_data['is_correct']
    
-    k = 2
-    lr = 0.02
-    iterations = 20
+    k = 5
+    lr = 0.05
+    iterations = 10
     
     print("Running New IRT with learning rate {} for {} iterations using top {} subjects.".format(lr, iterations, k))
 
@@ -337,25 +337,10 @@ def main():
     val_nllk = list(map(lambda x: x/num_val, val_nllk))
     
 
-
-    plt.figure()
-    
-    plt.title("Iteration Number vs. Average Negative log-likelihood", y=1.05)
-    
-    plt.xlabel('Iteration')
-    plt.ylabel('Average Negative log-likelihood')
-
-    plt.xticks(range(0, iterations))
-    
-    plt.plot(train_nllk, 'g.-', label="Training set")
-    plt.plot(val_nllk, 'b.-', label="Validation set")
-    plt.legend()
-    
-    plt.show()
     
 
-    
-    
+    # Return the nllk/accuracies for plotting
+    return train_nllk, val_nllk, train_acc_lst, val_acc_lst, test_acc_lst
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################

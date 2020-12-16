@@ -114,7 +114,7 @@ def update_theta_beta(data, lr, theta, beta, s):
             
             num_sub_j = np.sum(s[questions[i]])
             
-            theta_deriv[theta_idx, k] += (s_jk * theta_i_k / num_sub_j) \
+            theta_deriv[theta_idx, k] += (s_jk  / num_sub_j) \
                                        * (c_ij - sig)
 
 
@@ -151,13 +151,14 @@ def irt(data, val_data, test_data, lr, iterations, num_users, num_questions, k, 
     theta = np.random.rand(num_users, k + 1)
     beta = np.random.rand(num_questions)
 
-    top_k = get_top_k_subjects(question_meta, k)
+    top_k, freq = get_top_k_subjects(question_meta, k)
 
-    s, top_k_enum = generate_subject_matrix(question_meta, top_k)
+    s, top_k_enum = generate_subject_matrix(question_meta, top_k, freq)
 
 
     val_acc_lst = []
     test_acc_lst = []
+    train_acc_lst = []
 
     nllk_train = []
     nllk_val = []
@@ -175,11 +176,14 @@ def irt(data, val_data, test_data, lr, iterations, num_users, num_questions, k, 
         score_test = evaluate(data=test_data, theta=theta, beta=beta, s=s)
         test_acc_lst.append(score_test)
         
+        score_test = evaluate(data=data, theta=theta, beta=beta, s=s)
+        train_acc_lst.append(score_test)
+        
         print("NLLK: {} \t Score: {}".format(neg_lld_train, score_val))
         theta, beta = update_theta_beta(data, lr, theta, beta, s)
 
     # TODO: You may change the return values to achieve what you want.
-    return theta, beta, val_acc_lst, test_acc_lst, (nllk_train, nllk_val)
+    return theta, beta, val_acc_lst, test_acc_lst, train_acc_lst, (nllk_train, nllk_val)
 
 
 def evaluate(data, theta, beta, s):
@@ -204,43 +208,6 @@ def evaluate(data, theta, beta, s):
            / len(data["is_correct"])
 
 
-# TODO: Move to utils if allowed
-def load_question_metadata(root_dir='/data'):
-    """ Load the question metadata as a dictionary.
-
-    :param root_dir: str
-    :return: A dictionary {question_id: subjects}
-   
-    """
-    path = os.path.join(root_dir, "question_meta.csv")
-    
-    if not os.path.exists(path):
-        raise Exception("The specified path {} does not exist.".format(path))
-    # Initialize the data.
-    data = {}
-    # Iterate over the row to fill in the data.
-    with open(path, "r") as csv_file:
-        reader = csv.reader(csv_file)
-        for row in reader:
-            try:
-                q_id = int(row[0])
-                subjects = row[1].replace('[', '').replace(']', '').split(sep=',')
-                
-                for i in range(len(subjects)):
-                    subjects[i] = int(subjects[i])
-                
-                subjects.remove(0)
-                data[q_id] = subjects
-            except ValueError:
-                print('ValueError')
-                # Pass first row.
-                pass
-            except IndexError:
-                # is_correct might not be available.
-                print('IndexError')
-
-                pass
-    return data
 
 def get_top_k_subjects(meta, k=5):
     '''
@@ -260,15 +227,16 @@ def get_top_k_subjects(meta, k=5):
                 subjects_freq[s] = 1
 
     top_k = []
+    freq = subjects_freq.copy()
     for i in range(k):
         
         m = max(subjects_freq, key=subjects_freq.get)
         top_k.append(m)
         subjects_freq.pop(m)
 
-    return top_k
+    return top_k, freq
 
-def generate_subject_matrix(meta, top_k):
+def generate_subject_matrix(meta, top_k, freq):
     '''
 
     Create Q x K+1 matrix M, where M[i, j] = 1 if question i comprises subject j
@@ -306,12 +274,11 @@ def generate_subject_matrix(meta, top_k):
     mat = np.zeros((q, k + 1))
     
     for question in subjects:
-        mat[question, 0] = k
+        mat[question, 0] = 1
         for sub in subjects[question]:
             sub_idx = top_k_enum[sub]
             mat[question, sub_idx] = 1
         
-    
     return mat, top_k_enum
 
 
@@ -344,128 +311,49 @@ def main():
     #questions = train_data['question_id']
     #is_correct = train_data['is_correct']
    
-    k = 10
-    top_k = get_top_k_subjects(meta, k)
-    print(top_k)
-        
-    s, top_k_enum = generate_subject_matrix(meta, top_k)
-    print(s)
-    print(top_k_enum)
-    print(meta[0])
-    
-    
-    
-    
-   
+    k = 2
     lr = 0.02
-    iterations = 10
+    iterations = 20
     
     print("Running New IRT with learning rate {} for {} iterations using top {} subjects.".format(lr, iterations, k))
 
-    theta, beta, val_acc_lst, test_acc_lst, nllk \
+    theta, beta, val_acc_lst, test_acc_lst, train_acc_lst, nllk \
     = irt(train_data, val_data, test_data, lr, iterations, num_users, num_questions, k, meta)
-    
+    print("Final training accuracy:", train_acc_lst[-1])
     print("Final validation accuracy:", val_acc_lst[-1])
     print("Final test accuracy:", test_acc_lst[-1])
     
     
-    # # Plot average negative log-likelihood for each iteration on both datasets
-    # train_nllk, val_nllk = nllk
+    # Plot average negative log-likelihood for each iteration on both datasets
+    train_nllk, val_nllk = nllk
     
     
-    # num_train = len(train_data['user_id'])
+    num_train = len(train_data['user_id'])
     
-    # num_val = len(val_data['user_id'])
+    num_val = len(val_data['user_id'])
     
-    # # Divide each likelihood value by number of samples to get average
-    # train_nllk = list(map(lambda x: x/num_train, train_nllk))
-    # val_nllk = list(map(lambda x: x/num_val, val_nllk))
+    # Divide each likelihood value by number of samples to get average
+    train_nllk = list(map(lambda x: x/num_train, train_nllk))
+    val_nllk = list(map(lambda x: x/num_val, val_nllk))
     
 
 
-    # plt.figure()
+    plt.figure()
     
-    # plt.title("Iteration Number vs. Average Negative log-likelihood", y=1.05)
+    plt.title("Iteration Number vs. Average Negative log-likelihood", y=1.05)
     
-    # plt.xlabel('Iteration')
-    # plt.ylabel('Average Negative log-likelihood')
+    plt.xlabel('Iteration')
+    plt.ylabel('Average Negative log-likelihood')
 
-    # plt.xticks(range(0, iterations))
+    plt.xticks(range(0, iterations))
     
-    # plt.plot(train_nllk, 'g.-', label="Training set")
-    # plt.plot(val_nllk, 'b.-', label="Validation set")
-    # plt.legend()
+    plt.plot(train_nllk, 'g.-', label="Training set")
+    plt.plot(val_nllk, 'b.-', label="Validation set")
+    plt.legend()
     
-    # plt.show()
+    plt.show()
     
-    # #####################################################################
-    # #                       END OF YOUR CODE                            #
-    # #####################################################################
 
-    # #####################################################################
-    # # TODO:                                                             #
-    # # Implement part (c)                                                #
-    # #####################################################################
-    # print("Final validation accuracy:", val_acc_lst[-1])
-    # print("Final test accuracy:", test_acc_lst[-1])
-    
-    # # d) Plot probabilities of a correct answer for 5 questions
-    
-    # # Pick 5 questions, with evenly spaced betas
-    
-    # num_betas = beta.shape[0]
-    
-    # beta_idxs = np.array([0, num_betas/4, 2*num_betas/4, 3*num_betas/4, num_betas - 1], dtype=int)
-    
-    # # Pick questions from sorted betas
-    # betas = np.sort(beta)[beta_idxs]
-    
-    # # Get indices/question ids of sampled betas
-    # questions = []
-    # for b in betas:
-    #     questions.append(np.nonzero(beta==b)[0][0])
-    
-    # questions = np.array(questions)
-    
-    # print("Sampled questions", questions)
-    
-    # print("Betas:", betas)
-    
-    # # p(c_ij|theta, beta)
-    # prob_correct = lambda theta, beta: sigmoid(theta - beta)
-    
-    # # range of theta values to plot 
-    # theta_range = np.arange(start=-5, stop=5, step=.01)
-    
-    # # p(c_ij|theta, beta) for each question, over theta_range
-    # question_probabilities = []
-        
-    # for beta_j in betas:
-    #     question_probabilities.append(prob_correct(theta_range, beta_j))
-    
-    # # Plot theta vs. probability correct, for each question
-    # plt.figure()
-    
-    # plt.title("Theta Value vs. Probability of answering question correctly", y=1.05)
-    
-    # plt.xlabel('Theta')
-    # plt.ylabel('Probability Correct')
-    # #plt.xticks(range(-5,5))
-    
-    # color_val = 0
-    # for i in range(len(question_probabilities)):
-        
-    #     p = question_probabilities[i]
-    #     label = "{},{:.2f}".format(questions[i], betas[i])
-        
-    #     plt.plot(theta_range, p, '-', label=label, color=hsv_to_rgb((color_val, 1, .7)))
-        
-    #     color_val += .2
-        
-    
-    # plt.legend(title="Question Number,Beta")
-    
-    # plt.show()
     
     
     #####################################################################

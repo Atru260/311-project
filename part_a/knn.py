@@ -3,10 +3,15 @@
 # os.chdir("..")
 
 from sklearn.impute import KNNImputer
+from sklearn.metrics.pairwise import nan_euclidean_distances
+
 from utils import *
 import numpy as np
 import matplotlib.pyplot as plt
 
+
+def weighted_nan_euclidean(X, Y=None, squared=False, missing_values=np.nan, copy=True):
+    return nan_euclidean_distances(X, Y, squared, missing_values, copy)
 
 def knn_impute_by_user(matrix, valid_data, k):
     """ Fill in the missing values using k-Nearest Neighbors based on
@@ -44,6 +49,9 @@ def knn_impute_by_user_p(matrix, valid_data, k):
     nbrs = KNNImputer(n_neighbors=k)
     # We use NaN-Euclidean distance measure.
     mat = nbrs.fit_transform(matrix)
+  
+    
+    
     acc = sparse_matrix_evaluate(valid_data, mat)
     print("Validation Accuracy: {} k: {}".format(acc, k))
     prediction = sparse_matrix_predictions(valid_data, mat)

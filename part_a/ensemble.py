@@ -88,7 +88,8 @@ def train_e(model_name, bags, start_index, end_index, v_or_t):
         total= total + model(model_name, bags[i], v_or_t)
     return total
 def main():
-    trials = 3
+
+    trials = 1
     sparse_matrix = load_train_sparse("data").toarray()
     val_data = load_valid_csv("data")
     test_data = load_public_test_csv("data")

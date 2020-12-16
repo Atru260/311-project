@@ -1,5 +1,8 @@
-from utils import *
+# import os
+# #print(os.getcwd())
+# os.chdir("..")
 
+from utils import *
 import numpy as np
 import scipy.special
 import matplotlib.pyplot as plt

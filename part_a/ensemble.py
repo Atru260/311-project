@@ -45,7 +45,7 @@ def bootstrap(data,n_trials, sparse_shape):
     
 
 def model(model_name, bag, v_or_t):
-    knn_k = 24
+    knn_k = 9
     lr_i = 0.02
     iterations = 10
     num_users = bag.shape[0]
@@ -54,8 +54,8 @@ def model(model_name, bag, v_or_t):
     m = AutoEncoder(num_question=1774, k=k)
 
     # Set optimization hyperparameters.
-    lr_n = 0.001
-    num_epoch = 32
+    lr_n = 0.05
+    num_epoch = 11
     lamb = 0.01
     if model_name == 'k':
         # knnl = []
@@ -88,7 +88,7 @@ def train_e(model_name, bags, start_index, end_index, v_or_t):
         total= total + model(model_name, bags[i], v_or_t)
     return total
 def main():
-    trials = 50
+    trials = 3
     sparse_matrix = load_train_sparse("data").toarray()
     val_data = load_valid_csv("data")
     test_data = load_public_test_csv("data")
@@ -101,28 +101,21 @@ def main():
     train_data = load_train_csv("data")
 
     bags = bootstrap(train_data, trials, sparse_matrix.shape)
-    print(bags[38].shape)
-    print(bags[37].shape)
-    #p_knn = train_e('k', bags, 0, 47, val_data)
-    p_knn = model('k', bags[38], val_data)
-    # p_knn2 = model('k', bags[3], val_data)
-    # p_knn3 = model('k', bags[4], val_data)
-    # p_knn4 = model('k', bags[5], val_data)
-    # p_knn5 = model('k', bags[6], val_data)
-    # p_knn6 = model('k', bags[7], val_data)
-    # p_knn7 = model('k', bags[8], val_data)
-    p_irt = model('i', bags[48], val_data)
-    print('neural network hyperparameter testing...')
-    p_nn = model('n', bags[49], val_data)
-    # #print(p_irt)
-    prob = p_irt + p_nn
-    prob = prob/2
+    print(bags.shape)
+    p_irtv = train_e('i', bags, 0, 2, val_data)
+    p_irtv = p_irtv/3
+    p_irtv = np.where(p_irtv >= .5, 1, p_irtv)
+    p_irtv = np.where(p_irtv <= .5, 0, p_irtv)
+    val = evaluate(val_data, p_irtv)
+    print('Validation Accuracy:')
+    print(val)
+    p_irt = train_e('i', bags, 0, 2, test_data)
+    prob = p_irt 
+    prob = prob/3
     prob = np.where(prob >= .5, 1, prob)
     prob = np.where(prob <= .5, 0, prob)
-    total = p_knn +prob
-    total = total/(trials-1)
-    predict = evaluate(val_data, total)
-    #print(p_nn)
+    predict = evaluate(test_data, prob)
+    print('Test Accuracy:')
     print(predict)
 
     

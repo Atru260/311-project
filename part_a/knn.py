@@ -4,6 +4,8 @@
 
 from sklearn.impute import KNNImputer
 from utils import *
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 def knn_impute_by_user(matrix, valid_data, k):
@@ -108,6 +110,15 @@ def main():
     i = np.argmax(acc_item)
     tacc_user = knn_impute_by_item(sparse_matrix, test_data, K[i])
     print(tacc_user)
+    K = np.array(K)
+    acc_user = np.array(acc_user)
+    acc_item = np.array(acc_item)
+    plt.plot(K, acc_user, 'r') # plotting t, a separately 
+    plt.plot(K, acc_item, 'b') # plotting t, b separately 
+    plt.title("Validation Accuracy over k")
+    plt.xlabel("k")
+    plt.ylabel("Accuracy")
+    plt.show()
     
     #####################################################################
     #                       END OF YOUR CODE                            #
